@@ -14,7 +14,7 @@ import {
 } from '@heroicons/react/outline'
 
 import SearchBox from './SearchBox'
-import SignIn from './SignIn'
+import SignIn from './SignInOut'
 
 const Header = () => {
   return (
