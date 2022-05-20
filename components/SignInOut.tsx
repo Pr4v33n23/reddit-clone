@@ -16,7 +16,7 @@ const SignInOut = () => {
           <div className="relative h-5 w-5 flex-shrink-0">
             <Image src={logomini} objectFit="contain" layout="fill" alt="" />
           </div>
-          <p className="text-gray-500">{session.user?.name}</p>
+          <p className="text-gray-500 truncate">{session.user?.name}</p>
         </div>
       ) : (
         <div

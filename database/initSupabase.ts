@@ -30,3 +30,36 @@ export const addSubreddit = async (subreddit:Subreddit) => {
 
     return  {data, error}
 }
+
+export const getAllPosts = async () => {
+    const { data, error } = await supabase
+    .from<Post>('post')
+    .select(`
+    id,
+    title,
+    body,
+    image,
+    username,
+    created_at,
+    subreddit (
+        id,
+        topic,
+        created_at
+    ),
+    comment (
+        id,
+        text,
+        username,
+        created_at
+    ),
+    votes (
+        id,
+        upvote,
+        username,
+        created_at
+    )
+    `)
+    .order('created_at', {ascending: false})
+
+    return {data, error}
+}
