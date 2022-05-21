@@ -1,7 +1,8 @@
 import { PhotographIcon, LinkIcon } from '@heroicons/react/outline'
 import { useSession } from 'next-auth/react'
-import React, { useState } from 'react'
-import { useForm } from 'react-hook-form'
+import Router, { useRouter } from 'next/router'
+import React, { useEffect, useState } from 'react'
+import { useForm, useFormState, useWatch } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import {
   addPost,
@@ -18,37 +19,45 @@ type PostFormData = {
   subreddit: string
 }
 
-const PostBox = () => {
+type PostBoxProps = {
+  subreddit?: string
+}
+
+const PostBox = ({ subreddit }: PostBoxProps) => {
   const { data: session } = useSession()
   const [imageBoxOpen, setImageBoxOpen] = useState(false)
+  const router = useRouter()
 
   const {
     register,
     setValue,
     handleSubmit,
     watch,
-    formState: { errors },
+    reset,
+    formState: { errors, isSubmitSuccessful },
   } = useForm<PostFormData>()
 
   const onSubmit = handleSubmit(async (postFormData) => {
-    console.log(postFormData)
     const notification = toast.loading('Creating new post...')
     try {
-      const { data: subreddit } = await getSubredditByTopic(
-        postFormData.subreddit
+      const { data: subredditExists } = await getSubredditByTopic(
+        subreddit || postFormData.subreddit
       )
-      if (subreddit) {
+      if (subredditExists) {
         let post: Post = {
           title: postFormData.postTitle,
           body: postFormData.postBody,
           image: postFormData.postImage || '',
           username: session?.user?.name!,
-          subreddit_id: subreddit.id!,
+          subreddit_id: subredditExists.id!,
         }
         await addPost(post)
+
         toast.success('New post added successfully', {
           id: notification,
         })
+
+        router.reload()
       } else {
         let newSubreddit: Subreddit = {
           topic: postFormData.subreddit.toLowerCase(),
@@ -66,12 +75,11 @@ const PostBox = () => {
         toast.success('New post added successfully', {
           id: notification,
         })
+
+        router.reload()
       }
 
-      setValue('postBody', '')
-      setValue('postImage', '')
-      setValue('postTitle', '')
-      setValue('subreddit', '')
+      reset({ postBody: '', postTitle: '', postImage: '', subreddit: '' })
     } catch (err) {
       toast.error('Something went wrong', {
         id: notification,
@@ -92,7 +100,11 @@ const PostBox = () => {
           className="flex-1 rounded-md bg-gray-50 p-2 pl-5 outline-none"
           type="text"
           placeholder={
-            session ? 'Create a post by entering a title' : 'Sign in to post'
+            session
+              ? subreddit
+                ? `Create a post in r/${subreddit}`
+                : 'Create a post by entering a title'
+              : 'Sign in to post'
           }
         />
         <LinkIcon className="h-6 text-gray-300" />
@@ -114,15 +126,17 @@ const PostBox = () => {
               placeholder="Text (optional)"
             />
           </div>
-          <div className="flex items-center px-2">
-            <p className="min-w-[90px]">Subreddit: </p>
-            <input
-              {...register('subreddit', { required: true })}
-              className="m-2 flex-1 bg-blue-50 p-2 outline-none"
-              type="text"
-              placeholder="i.e. nextjs"
-            />
-          </div>
+          {!subreddit && (
+            <div className="flex items-center px-2">
+              <p className="min-w-[90px]">Subreddit: </p>
+              <input
+                {...register('subreddit', { required: true })}
+                className="m-2 flex-1 bg-blue-50 p-2 outline-none"
+                type="text"
+                placeholder="i.e. nextjs"
+              />
+            </div>
+          )}
 
           {imageBoxOpen && (
             <div className="flex items-center px-2">
